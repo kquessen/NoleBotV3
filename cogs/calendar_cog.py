@@ -70,7 +70,6 @@ class CalendarCog(commands.Cog):
             subject = event.get("subject", "No Title")
             start = event.get("start", {}).get("dateTime", "No Start Time")
 
-            # Optional: format the time cleaner
             try:
                 dt_obj = datetime.fromisoformat(start.replace("Z", "+00:00"))
                 start = dt_obj.strftime("%A, %b %d at %I:%M %p")
