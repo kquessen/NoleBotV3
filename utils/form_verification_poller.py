@@ -17,7 +17,7 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD")
 
 # ======== Google Sheets Setup ========
 scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-creds = ServiceAccountCredentials.from_json_keyfile_name('nolebot-credentials.json', scope)
+creds = ServiceAccountCredentials.from_json_keyfile_name('../json/nolebot-credentials.json', scope)
 client = gspread.authorize(creds)
 sheet = client.open('NoleBot Verification').sheet1
 
@@ -27,25 +27,25 @@ def generate_code(length=6):
 
 def load_verified():
     try:
-        with open('json/verified.json') as f:
+        with open('../json/verified.json') as f:
             return json.load(f)
     except FileNotFoundError:
         return {}
 
 def save_verified(data):
-    with open('json/verified.json', 'w') as f:
+    with open('../json/verified.json', 'w') as f:
         json.dump(data, f, indent=2)
 
 def load_last_timestamp():
     try:
-        with open('json/poll_state.json') as f:
+        with open('../json/poll_state.json') as f:
             data = json.load(f)
             return data.get("last_timestamp")
     except FileNotFoundError:
         return None
 
 def save_last_timestamp(timestamp_str):
-    with open('json/poll_state.json', 'w') as f:
+    with open('../json/poll_state.json', 'w') as f:
         json.dump({"last_timestamp": timestamp_str}, f, indent=2)
 
 # ======== Send Email ========

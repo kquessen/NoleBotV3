@@ -197,6 +197,11 @@ async def send_dm_reminders():
             save_verified_codes(verified)
         await asyncio.sleep(60)
 
+@client.command()
+async def test(ctx):
+    await ctx.send("Prefix commands are working.")
+
+
 # ========== on_ready ==========
 @client.event
 async def on_ready():

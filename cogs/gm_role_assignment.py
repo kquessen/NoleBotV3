@@ -38,9 +38,10 @@ class RoleAssignment(commands.Cog):
 
     def is_verified(self, member: discord.Member) -> bool:
         return VERIFIED_STUDENT_ROLE_ID in [role.id for role in member.roles]
-
+    
     @commands.command(name="addrole")
     async def addrole(self, ctx: commands.Context, role: discord.Role, *user_mentions):
+        print(f"✅ Received !addrole command from {ctx.author}")
         if not self.is_authorized(ctx.author):
             return  # silently ignore if not an admin or game manager
 
