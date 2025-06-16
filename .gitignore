@@ -1,1 +1,18 @@
+# === Python ignores ===
+__pycache__/
+*.pyc
+
+# === Secrets / Configs ===
+.env
+nolebot-credentials.json
+
+# === Logs / Temp Files ===
+*.log
+
+# === Data Files to Ignore ===
+json/verified.json
+json/verified_backup.json
+
+# === Ignore misc folder ===
+misc/
 
