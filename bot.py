@@ -16,6 +16,7 @@ intents.message_content = True
 intents.members = True
 
 client = commands.Bot(command_prefix="!", intents=intents)
+client.remove_command("help")  # Remove default help command
 
 async def load_cogs():
     await client.load_extension("cogs.gm_role_assignment")
