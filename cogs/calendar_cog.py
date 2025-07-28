@@ -119,6 +119,7 @@ class CalendarCog(commands.Cog):
     @commands.command(name="debugevents")
     @commands.has_permissions(administrator=True)
     async def debug_events_command(self, ctx):
+        """Fetch and display all events from the calendar."""
         eastern = pytz.timezone("US/Eastern")
         now = datetime.now(eastern)
         year_start = datetime(now.year, 1, 1, 0, 0, 0, tzinfo=eastern)
@@ -169,6 +170,7 @@ class CalendarCog(commands.Cog):
 
     @commands.command(name="getevents")
     async def get_month_events(self, ctx):
+        """Fetch and display events for the current month."""
         eastern = pytz.timezone("US/Eastern")
         now = datetime.now(eastern)
         start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
