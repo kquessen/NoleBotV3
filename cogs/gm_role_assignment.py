@@ -41,16 +41,15 @@ class RoleAssignment(commands.Cog):
     
     @commands.command(name="addrole")
     async def addrole(self, ctx: commands.Context, role: discord.Role, *user_mentions):
-        print(f"✅ Received !addrole command from {ctx.author}")
+        """Assigns a role to mentioned users if they are verified students."""
         if not self.is_authorized(ctx.author):
             return  # silently ignore if not an admin or game manager
+        
+        if ctx.channel.id != ALLOWED_CHANNEL_ID:
+            return  # silently ignore if not in the allowed channel
 
         if not self.is_verified(ctx.author):
             await ctx.send("❌ You must be a verified student to use this command.")
-            return
-
-        if ctx.channel.id != ALLOWED_CHANNEL_ID:
-            await ctx.send(f"❌ This command can only be used in <#{ALLOWED_CHANNEL_ID}>.")
             return
 
         if role.id not in ASSIGNABLE_ROLE_IDS:
@@ -78,8 +77,8 @@ class RoleAssignment(commands.Cog):
 
             if not self.is_valid_nickname(member):
                 results.append(
-                    f"⚠️ **{member.name}** does not have a properly formatted nickname. "
-                    f"Please tell {member.mention} to use `FirstName | GamerTag` format."
+                    f"⚠️ {member.mention} does not have a properly formatted nickname. "
+                    f"Please tell them to use `FirstName | GamerTag` format, and then try again."
                 )
                 continue
 
@@ -95,15 +94,15 @@ class RoleAssignment(commands.Cog):
 
     @commands.command(name="delrole")
     async def delrole(self, ctx: commands.Context, role: discord.Role, *user_mentions):
+        """Removes a role from mentioned users if they are verified students."""
         if not self.is_authorized(ctx.author):
             return  # silently ignore if not an admin or game manager
 
+        if ctx.channel.id != ALLOWED_CHANNEL_ID:
+            return # silently ignore if not in the allowed channel
+
         if not self.is_verified(ctx.author):
             await ctx.send("❌ You must be a verified student to use this command.")
-            return
-
-        if ctx.channel.id != ALLOWED_CHANNEL_ID:
-            await ctx.send(f"❌ This command can only be used in <#{ALLOWED_CHANNEL_ID}>.")
             return
 
         if role.id not in ASSIGNABLE_ROLE_IDS:
@@ -127,8 +126,8 @@ class RoleAssignment(commands.Cog):
 
             if not self.is_valid_nickname(member):
                 results.append(
-                    f"⚠️ **{member.name}** does not have a properly formatted nickname. "
-                    f"Please tell {member.mention} to use `FirstName | GamerTag` format."
+                    f"⚠️ {member.mention} does not have a properly formatted nickname. "
+                    f"Please tell them to use `FirstName | GamerTag` format, and then try again."
                 )
                 continue
 
