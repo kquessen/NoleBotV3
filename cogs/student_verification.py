@@ -29,17 +29,7 @@ class StudentVerification(commands.Cog):
         except (FileNotFoundError, json.JSONDecodeError, ValueError) as e:
             print(f"⚠️ Error loading verified.json: {e}")
             return {}
-
-        now = time.time()
-        valid = {
-            email: v for email, v in data.items()
-            if now - v['timestamp'] <= 72 * 3600
-        }
-
-        if len(valid) != len(data):
-            self.save_verified_codes(valid)
-
-        return valid
+        return data
 
     def save_verified_codes(self, data):
         json_path = 'json/verified.json'
@@ -61,7 +51,7 @@ class StudentVerification(commands.Cog):
         log_file = "verification.log"
 
         timestamp_str = now.strftime('%Y-%m-%d %H:%M:%S')
-        new_line = f"[{timestamp_str} UTC] {user.name}#{user.discriminator} ({user.id}) tried code '{code}': {result}\n"
+        new_line = f"[{timestamp_str} UTC] {user.name} ({user.id}) tried code '{code}': {result}\n"
 
         timestamp_pattern = re.compile(r"\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}) UTC\]")
 
@@ -82,6 +72,17 @@ class StudentVerification(commands.Cog):
         with open(log_file, "w", encoding="utf-8") as f:
             f.writelines(kept_lines)
 
+    def cleanup_expired_codes(self):
+        """Remove codes older than 72 hours."""
+        now = time.time()
+        verified = self.load_verified_codes()
+        expired = [email for email, entry in verified.items() if now - entry['timestamp'] > 72 * 3600]
+        if expired:
+            for email in expired:
+                print(f"🗑️ Removing expired code for {email}")
+                del verified[email]
+            self.save_verified_codes(verified)
+
     # ========== Slash Command: /verify ==========
     @app_commands.command(
         name="verify",
@@ -98,14 +99,18 @@ class StudentVerification(commands.Cog):
         verified = self.load_verified_codes()
         matched_email = None
 
+        # Check for code and username match (case-insensitive)
         for email, entry in verified.items():
             if entry['code'].lower() == code.lower():
-                matched_email = email
-                break
+                expected_tag = entry.get("discord_tag", "").strip().lower()
+                actual_tag = interaction.user.name.lower()
+                if expected_tag == actual_tag:
+                    matched_email = email
+                    break
 
         if matched_email is None:
-            await interaction.followup.send("❌ Invalid or expired verification code.")
-            self.log_verification_attempt(interaction.user, code, "❌ Invalid or expired")
+            await interaction.followup.send("❌ Invalid, expired, or unauthorized verification code.")
+            self.log_verification_attempt(interaction.user, code, "❌ Invalid, expired, or unauthorized")
             return
 
         guild = self.bot.get_guild(SERVER_ID)
@@ -135,19 +140,24 @@ class StudentVerification(commands.Cog):
         await interaction.followup.send(f"✅ Verification successful! Your email `{matched_email}` has been verified.")
         self.log_verification_attempt(interaction.user, code, f"✅ Verified successfully (email: {matched_email})")
 
-        if matched_email in verified:
-            del verified[matched_email]
-            self.save_verified_codes(verified)
+        # Failsafe: reload latest verified.json before deleting
+        latest_verified = self.load_verified_codes()
+        if matched_email in latest_verified:
+            del latest_verified[matched_email]
+            self.save_verified_codes(latest_verified)
             print(f"✅ Deleted used code for {matched_email}")
+        else:
+            print(f"⚠️ Tried to delete {matched_email}, but it was not found in the latest file.")
 
     # ========== Background DM Reminder Task ==========
     async def send_dm_reminders(self):
         await self.bot.wait_until_ready()
         while not self.bot.is_closed():
+            self.cleanup_expired_codes()  # Remove expired codes every cycle
             guild = self.bot.get_guild(SERVER_ID)
             if guild is None:
                 print("⚠️ Server not found.")
-                await asyncio.sleep(10)
+                await asyncio.sleep(5)
                 continue
 
             verified = self.load_verified_codes()
@@ -186,10 +196,11 @@ class StudentVerification(commands.Cog):
 
             if changed:
                 self.save_verified_codes(verified)
-            await asyncio.sleep(60)
+            await asyncio.sleep(5)  # Check interval in seconds
 
     @commands.command()
     async def test(self, ctx):
+        """Test command to check if the cog is loaded correctly."""
         await ctx.send("Prefix commands are working.")
 
     async def cog_load(self):
