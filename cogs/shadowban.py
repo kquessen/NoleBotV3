@@ -1,13 +1,15 @@
 import discord
 from discord.ext import commands
 
-SHADOWBAN_ROLE_ID = 1395838975716884520  # The role that indicates a user is shadowbanned
-ADMIN_ROLE_ID = 1375632195816787968      # The role that can use the shadowban commands
-ALLOWED_CHANNEL_ID = 1395840185400426598 # The channel where the shadowban commands can be used
+SHADOWBAN_ROLE_ID = 1399529049461620876  # The role that indicates a user is shadowbanned
+ADMIN_ROLE_ID = 447957885540892692       # The role that can use the shadowban commands
+ALLOWED_CHANNEL_ID = 545734391419371550 # The channel where the shadowban commands can be used
 
 EXEMPT_ROLE_IDS = {
-    123456789012345678,  
-    987654321098765432,
+    447957885540892692,  
+    695489702723059742,
+    543268440656314370,
+    347642526011883521,
 }
 
 class Shadowban(commands.Cog):
