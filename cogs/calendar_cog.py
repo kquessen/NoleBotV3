@@ -8,8 +8,8 @@ from icalendar import Calendar
 from dateutil.rrule import rrulestr
 
 ICS_URL = "https://outlook.office365.com/owa/calendar/30f33308faff4d53a3ea3afe1ed5fbad@fsu.edu/690a01fda04b4ec1a579221f653489bb7175071983823801560/calendar.ics"
-CHANNEL_ID = 1384586235074576465
-ROLE_ID = 1384587546394362020
+CHANNEL_ID = 1346069503863423059
+ROLE_ID = 1399528835837595689
 WEEKLY_EMBED_COLOR = 0xCEB888
 MORNING_EMBED_COLOR = 0x782F40
 DATA_FILE = "../json/calendar_announced.json"
