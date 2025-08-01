@@ -16,7 +16,7 @@ VERIFIED_STUDENT_ROLE_ID = int(os.getenv("VERIFIED_STUDENT_ROLE_ID"))
 
 ASSIGNABLE_ROLE_IDS = set(config["assignable_roles"])
 AUTHORIZED_ROLE_IDS = set(config["authorized_roles"])
-ALLOWED_CHANNEL_ID = 1375633409891766272  # '#gms-assign-here'
+ALLOWED_CHANNEL_ID = 546878493200482314  # '#gms-assign-here'
 
 class RoleAssignment(commands.Cog):
     def __init__(self, bot):
@@ -40,26 +40,49 @@ class RoleAssignment(commands.Cog):
         return VERIFIED_STUDENT_ROLE_ID in [role.id for role in member.roles]
     
     @commands.command(name="addrole")
-    async def addrole(self, ctx: commands.Context, role: discord.Role, *user_mentions):
-        """Assigns a role to mentioned users if they are verified students."""
+    async def addrole(self, ctx: commands.Context, *args):
+        """Assigns one or more roles to one or more mentioned users if they are verified students."""
         if not self.is_authorized(ctx.author):
-            return  # silently ignore if not an admin or game manager
-        
+            return
+
         if ctx.channel.id != ALLOWED_CHANNEL_ID:
-            return  # silently ignore if not in the allowed channel
+            return
 
         if not self.is_verified(ctx.author):
             await ctx.send("❌ You must be a verified student to use this command.")
             return
 
-        if role.id not in ASSIGNABLE_ROLE_IDS:
+        # Split args into roles and members: roles first, then users
+        roles = []
+        members = []
+        found_user = False
+        for arg in args:
+            if not found_user and (arg.startswith("<@") and not arg.startswith("<@&")):
+                found_user = True
+            if found_user:
+                # User mention
+                member = ctx.guild.get_member(int(arg.strip("<@!>")))
+                if member:
+                    members.append(member)
+            else:
+                # Role mention or name
+                if arg.startswith("<@&") and arg.endswith(">"):
+                    role = ctx.guild.get_role(int(arg.strip("<@&>")))
+                    if role:
+                        roles.append(role)
+                else:
+                    role = discord.utils.get(ctx.guild.roles, name=arg)
+                    if role:
+                        roles.append(role)
+
+        # Filter only assignable roles
+        roles = [role for role in roles if role.id in ASSIGNABLE_ROLE_IDS]
+        if not roles:
             await ctx.send(
-                f"❌ `{role.name}` is not an assignable team role. "
-                f"If you think this is a mistake, please contact <@214151193998524416>."
+                "❌ Please specify at least one valid assignable team role.\n"
+                "If you think this is a mistake, please contact <@214151193998524416>."
             )
             return
-
-        members = self.collect_members(ctx, *user_mentions)
         if not members:
             await ctx.send("❌ Please mention at least one valid user.")
             return
@@ -68,11 +91,7 @@ class RoleAssignment(commands.Cog):
 
         for member in members:
             if not self.is_verified(member):
-                results.append(f"⚠️ {member.mention} must be a verified student to receive `{role.name}`.")
-                continue
-
-            if role in member.roles:
-                results.append(f"⚠️ {member.mention} already has `{role.name}`.")
+                results.append(f"⚠️ {member.mention} must be a verified student to receive roles.")
                 continue
 
             if not self.is_valid_nickname(member):
@@ -82,37 +101,63 @@ class RoleAssignment(commands.Cog):
                 )
                 continue
 
-            try:
-                await member.add_roles(role)
-                results.append(f"✅ `{role.name}` assigned to {member.mention}.")
-            except discord.Forbidden:
-                results.append(f"❌ I don’t have permission to assign `{role.name}` to {member.mention}.")
-            except Exception as e:
-                results.append(f"❌ Error for {member.mention}: {e}")
+            for role in roles:
+                if role in member.roles:
+                    results.append(f"⚠️ {member.mention} already has `{role.name}`.")
+                    continue
+
+                try:
+                    await member.add_roles(role)
+                    results.append(f"✅ `{role.name}` assigned to {member.mention}.")
+                except discord.Forbidden:
+                    results.append(f"❌ I don’t have permission to assign `{role.name}` to {member.mention}.")
+                except Exception as e:
+                    results.append(f"❌ Error for {member.mention}: {e}")
 
         await ctx.send("\n".join(results))
 
     @commands.command(name="delrole")
-    async def delrole(self, ctx: commands.Context, role: discord.Role, *user_mentions):
-        """Removes a role from mentioned users if they are verified students."""
+    async def delrole(self, ctx: commands.Context, *args):
+        """Removes one or more roles from one or more mentioned users if they are verified students."""
         if not self.is_authorized(ctx.author):
-            return  # silently ignore if not an admin or game manager
+            return
 
         if ctx.channel.id != ALLOWED_CHANNEL_ID:
-            return # silently ignore if not in the allowed channel
+            return
 
         if not self.is_verified(ctx.author):
             await ctx.send("❌ You must be a verified student to use this command.")
             return
 
-        if role.id not in ASSIGNABLE_ROLE_IDS:
+        # Split args into roles and members: roles first, then users
+        roles = []
+        members = []
+        found_user = False
+        for arg in args:
+            if not found_user and (arg.startswith("<@") and not arg.startswith("<@&")):
+                found_user = True
+            if found_user:
+                member = ctx.guild.get_member(int(arg.strip("<@!>")))
+                if member:
+                    members.append(member)
+            else:
+                if arg.startswith("<@&") and arg.endswith(">"):
+                    role = ctx.guild.get_role(int(arg.strip("<@&>")))
+                    if role:
+                        roles.append(role)
+                else:
+                    role = discord.utils.get(ctx.guild.roles, name=arg)
+                    if role:
+                        roles.append(role)
+
+        # Filter only assignable roles
+        roles = [role for role in roles if role.id in ASSIGNABLE_ROLE_IDS]
+        if not roles:
             await ctx.send(
-                f"❌ `{role.name}` is not an assignable team role. "
-                f"If you think this is a mistake, please contact <@214151193998524416>."
+                "❌ Please specify at least one valid assignable role to remove.\n"
+                "If you think this is a mistake, please contact <@214151193998524416>."
             )
             return
-
-        members = self.collect_members(ctx, *user_mentions)
         if not members:
             await ctx.send("❌ Please mention at least one valid user.")
             return
@@ -121,7 +166,7 @@ class RoleAssignment(commands.Cog):
 
         for member in members:
             if not self.is_verified(member):
-                results.append(f"⚠️ {member.mention} must be a verified student to have `{role.name}` removed.")
+                results.append(f"⚠️ {member.mention} must be a verified student to have roles removed.")
                 continue
 
             if not self.is_valid_nickname(member):
@@ -131,17 +176,18 @@ class RoleAssignment(commands.Cog):
                 )
                 continue
 
-            if role not in member.roles:
-                results.append(f"⚠️ {member.mention} does not have `{role.name}`.")
-                continue
+            for role in roles:
+                if role not in member.roles:
+                    results.append(f"⚠️ {member.mention} does not have `{role.name}`.")
+                    continue
 
-            try:
-                await member.remove_roles(role)
-                results.append(f"✅ `{role.name}` removed from {member.mention}.")
-            except discord.Forbidden:
-                results.append(f"❌ I don’t have permission to remove `{role.name}` from {member.mention}.")
-            except Exception as e:
-                results.append(f"❌ Error for {member.mention}: {e}")
+                try:
+                    await member.remove_roles(role)
+                    results.append(f"✅ `{role.name}` removed from {member.mention}.")
+                except discord.Forbidden:
+                    results.append(f"❌ I don’t have permission to remove `{role.name}` from {member.mention}.")
+                except Exception as e:
+                    results.append(f"❌ Error for {member.mention}: {e}")
 
         await ctx.send("\n".join(results))
 
